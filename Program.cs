@@ -26,8 +26,10 @@ namespace ExportFromFTP
             var host = CreateHostBuilder(args).Build();
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Host built.");
-            logger.LogInformation("App is Windows Service: {IsWinService}", 
-                                WindowsServiceHelpers.IsWindowsService());
+            logger.LogInformation("App is Windows Service: {IsWinService}",
+                                   WindowsServiceHelpers.IsWindowsService());
+            logger.LogInformation("Environment is {EnvName}",
+                                   host.Services.GetRequiredService<IHostEnvironment>().EnvironmentName);
             host.Run();
 
             Log.CloseAndFlush();
@@ -35,7 +37,12 @@ namespace ExportFromFTP
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureServices(services => services.AddHostedService<Worker>())
+            .ConfigureServices((hostContext, services) => 
+                {
+                    services.AddHostedService<Worker>();
+                    services.Configure<WinscpOptions>(
+                        hostContext.Configuration.GetSection("WinscpOptions"));
+                })
                 .ConfigureLogging(logging => logging.ClearProviders())
                 .UseSerilog()
                 .UseWindowsService();
