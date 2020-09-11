@@ -1,7 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections;
+using System.Collections.Generic;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,6 +14,7 @@ namespace ExportFromFTP
         private readonly ILogger<Worker> _logger;
         private readonly WinscpOptions _sessionOptions;
         private Session _session = new Session();
+        
         public Worker(ILogger<Worker> logger, IOptions<WinscpOptions> sessionOptions)
         {
             _logger = logger;
@@ -58,16 +59,13 @@ namespace ExportFromFTP
         {
             try
             {
-                RemoteDirectoryInfo directory = 
-                    _session.ListDirectory("/");
+                IEnumerable<RemoteFileInfo> fileList = 
+                    _session.EnumerateRemoteFiles("/","*.*",EnumerationOptions.None);
 
-                foreach (RemoteFileInfo fileInfo in directory.Files)
+                foreach (RemoteFileInfo fileInfo in fileList)
                 {
-                    if (!fileInfo.IsDirectory)
-                        {
-                            _logger.LogInformation("{filename}", fileInfo.Name);
-                            Console.WriteLine($@"{fileInfo.Name} has {fileInfo.Length} bytes and has been created at {fileInfo.LastWriteTime}");
-                        }
+                    _logger.LogInformation("{filename}", fileInfo.Name);
+                    Console.WriteLine($@"{fileInfo.Name} has {fileInfo.Length} bytes and has been created at {fileInfo.LastWriteTime}");
                 }
             }
             catch (Exception e)
