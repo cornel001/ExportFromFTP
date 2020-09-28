@@ -3,6 +3,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Sqlite;
 using System;
 using Serilog;
 
@@ -42,6 +44,8 @@ namespace ExportFromFTP
                     services.AddHostedService<Worker>();
                     services.Configure<WinscpOptions>(
                         hostContext.Configuration.GetSection("WinscpOptions"));
+                    services.AddDbContext<FileContext>(options => 
+                        options.UseSqlServer(Configuration.GetConnectionString("ExportFromFTP")));
                 })
                 .ConfigureLogging(logging => logging.ClearProviders())
                 .UseSerilog()

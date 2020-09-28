@@ -2,9 +2,9 @@ namespace ExportFromFTP
 {
     public class WinscpOptions
     {
-        public string Protocol {get; set;}
-        public string HostName {get; set;}
-        public string UserName {get; set;}
-        public string Password {get; set;}
+        public string Protocol {get; set;} = null!;
+        public string HostName {get; set;} = null!;
+        public string UserName {get; set;} = null!;
+        public string Password {get; set;} = null!;
     }
 }
