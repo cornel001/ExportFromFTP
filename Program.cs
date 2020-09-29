@@ -4,7 +4,6 @@ using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Sqlite;
 using System;
 using Serilog;
 
@@ -14,7 +13,7 @@ namespace ExportFromFTP
     {
         public static IConfiguration Configuration {get;} = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json", optional:false, reloadOnChange:true)
-            .AddJsonFile($"appsettings{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")}.json", optional:true)
+            .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")}.json", optional:true)
             .AddEnvironmentVariables()
             .Build();
 
