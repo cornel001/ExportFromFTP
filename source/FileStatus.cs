@@ -2,7 +2,8 @@ namespace ExportFromFTP
 {
     public enum FileStatus
     {
-        Initial = 'I',
-        Succes = 'S'
+        Initial = 0,
+        Sent = 1,
+        Finished = 2
     }
 }

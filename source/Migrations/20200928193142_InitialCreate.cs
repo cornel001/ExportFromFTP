@@ -15,7 +15,7 @@ namespace ExportFromFTP.Migrations
                     Type = table.Column<string>(nullable: false),
                     WriteTime = table.Column<DateTime>(nullable: false),
                     LastWriteTime = table.Column<DateTime>(nullable: true),
-                    Status = table.Column<char>(nullable: false)
+                    Status = table.Column<int>(nullable: false)
                 },
                 constraints: table =>
                 {

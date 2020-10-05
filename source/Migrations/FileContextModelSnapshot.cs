@@ -28,7 +28,7 @@ namespace ExportFromFTP.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
-                        .HasColumnType("nvarchar(1)");
+                        .HasColumnType("int");
 
                     b.Property<string>("Type")
                         .IsRequired()
