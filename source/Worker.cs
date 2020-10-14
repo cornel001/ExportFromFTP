@@ -62,10 +62,11 @@ namespace ExportFromFTP
                 IEnumerable<RemoteFileInfo> fileList = 
                     _session.EnumerateRemoteFiles("/","*.*",EnumerationOptions.None);
 
-                foreach (RemoteFileInfo fileInfo in fileList)
+                foreach (RemoteFileInfo remotefileInfo in fileList)
                 {
-                    _logger.LogInformation("{filename}", fileInfo.Name);
-                    Console.WriteLine($@"{fileInfo.Name} has {fileInfo.Length} bytes and has been created at {fileInfo.LastWriteTime}");
+                    
+                    _logger.LogInformation("{filename}", remotefileInfo.Name);
+                    Console.WriteLine($@"{remotefileInfo.Name} has {remotefileInfo.Length} bytes and has been created at {remotefileInfo.LastWriteTime}");
                 }
             }
             catch (Exception e)
