@@ -1,11 +1,14 @@
 {
 	"folders": [
-		{
-			"path": "source"
-		},
-		{
-			"path": "test"
-		}
-	],
+        {
+            "path": "source"
+        },
+        {
+            "path": "test"
+        },
+        {
+            "path": "util"
+        }
+    ],
     "settings": {}
 }

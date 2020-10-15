@@ -1,2 +1,0 @@
-sc delete ExportFromFTP
-sc create ExportFromFTP DisplayName="ExportFromFTP" binPath="C:\Users\ionco\source\repos\ExportFromFTP\bin\Release\netcoreapp3.1\WinService.exe"
