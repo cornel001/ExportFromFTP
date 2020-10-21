@@ -30,10 +30,6 @@ namespace ExportFromFTP.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("WriteTime")
                         .HasColumnType("datetime2");
 

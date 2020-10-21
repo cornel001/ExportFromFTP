@@ -12,7 +12,6 @@ namespace ExportFromFTP.Migrations
                 columns: table => new
                 {
                     Path = table.Column<string>(nullable: false),
-                    Type = table.Column<string>(nullable: false),
                     WriteTime = table.Column<DateTime>(nullable: false),
                     LastWriteTime = table.Column<DateTime>(nullable: true),
                     Status = table.Column<int>(nullable: false)

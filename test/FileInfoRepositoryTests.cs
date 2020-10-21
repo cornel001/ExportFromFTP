@@ -12,12 +12,10 @@ namespace ExportFromFTP.Tests
         protected FileInfoContext ArrangeContext {get;}
         protected FileInfo FirstFileInfo {get;} = new FileInfo(
             "/IMG_20160104_230848.jpg",
-            "jpg",
             new DateTime(2020,10,01,14,13,21)
         );
         protected FileInfo AnotherFileInfo {get;} = new FileInfo(
             "/IMG_20160104_230850.jpg",
-            "jpg",
             new DateTime(2020,10,01,14,13,23)
         );
         protected DateTime newWriteTime {get;} = new DateTime(2020,10,10,14,10,12);
