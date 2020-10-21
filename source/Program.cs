@@ -43,8 +43,9 @@ namespace ExportFromFTP
                     services.AddHostedService<Worker>();
                     services.Configure<WinscpOptions>(
                         hostContext.Configuration.GetSection("WinscpOptions"));
-                    services.AddDbContext<FileContext>(options => 
+                    services.AddDbContext<FileInfoContext>(options => 
                         options.UseSqlServer(Configuration.GetConnectionString("ExportFromFTP")));
+                    services.AddScoped<FileInfoRepository>();
                 })
                 .ConfigureLogging(logging => logging.ClearProviders())
                 .UseSerilog()

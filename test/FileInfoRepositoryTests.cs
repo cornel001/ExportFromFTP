@@ -5,33 +5,33 @@ using FluentAssertions;
 
 namespace ExportFromFTP.Tests
 {
-    public class RepositoryServiceTests
+    public class FileInfoRepositoryTests
     {
-        protected FileContext ServiceContext {get;}
-        protected RepositoryService Service {get;}
-        protected FileContext ArrangeContext {get;}
+        protected FileInfoContext RepositoryContext {get;}
+        protected FileInfoRepository Repository {get;}
+        protected FileInfoContext ArrangeContext {get;}
         protected FileInfo FirstFileInfo {get;} = new FileInfo(
-            "ftps://test.user@localhost/IMG_20160104_230848.jpg",
+            "/IMG_20160104_230848.jpg",
             "jpg",
             new DateTime(2020,10,01,14,13,21)
         );
         protected FileInfo AnotherFileInfo {get;} = new FileInfo(
-            "ftps://test.user@localhost/IMG_20160104_230850.jpg",
+            "/IMG_20160104_230850.jpg",
             "jpg",
             new DateTime(2020,10,01,14,13,23)
         );
         protected DateTime newWriteTime {get;} = new DateTime(2020,10,10,14,10,12);
 
-        public RepositoryServiceTests()
+        public FileInfoRepositoryTests()
         {
-            var contextOptions = new DbContextOptionsBuilder<FileContext>()
+            var contextOptions = new DbContextOptionsBuilder<FileInfoContext>()
                 .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=ExportFromFTP;Trusted_Connection=True;")
                 .Options;
-            ServiceContext = new FileContext(contextOptions);
-            Service = new RepositoryService(ServiceContext);
-            ArrangeContext = new FileContext(contextOptions);
+            RepositoryContext = new FileInfoContext(contextOptions);
+            Repository = new FileInfoRepository(RepositoryContext);
+            ArrangeContext = new FileInfoContext(contextOptions);
             
-            using (var setupContext = new FileContext(contextOptions))
+            using (var setupContext = new FileInfoContext(contextOptions))
             {
                 setupContext.RemoveRange(setupContext.FilesInfo.ToListAsync().Result);
                 setupContext.Add(FirstFileInfo);            
@@ -41,32 +41,32 @@ namespace ExportFromFTP.Tests
 
         public void Dispose()
         {            
-            ServiceContext.Dispose();
+            RepositoryContext.Dispose();
             ArrangeContext.Dispose();
         }
 
         [Fact]
-        public void GetFromRepository_ExistingPath_ReturnsItem()
+        public void Get_ExistingPath_ReturnsItem()
         {
             var expected = FirstFileInfo;
 
-            var actual = Service.GetFromRepository(FirstFileInfo.Path);
+            var actual = Repository.Get(FirstFileInfo.Path);
 
             actual.Should().BeEquivalentTo(expected);
         }
 
         [Fact]
-        public void GetFromRepository_NonExistingPath_ReturnsNull()
+        public void Get_NonExistingPath_ReturnsNull()
         {
-            var actual = Service.GetFromRepository("thispathisnotthere");
+            var actual = Repository.Get("thispathisnotthere");
 
             Assert.Null(actual);
         }
 
         [Fact]
-        public void AddToRepository_NewPath_ReturnsNewFileInfo()
+        public void Add_NewPath_ReturnsNewFileInfo()
         {
-            var expected = Service.AddToRepository(AnotherFileInfo);
+            var expected = Repository.Add(AnotherFileInfo);
 
             var actual = ArrangeContext.Find<FileInfo>(AnotherFileInfo.Path);
 
@@ -74,53 +74,51 @@ namespace ExportFromFTP.Tests
         }
 
         [Fact]
-        public void AddToRepository_ExistingPath_ThrowsDbUpdateException()
+        public void Add_ExistingPath_ThrowsDbUpdateException()
         {
-            Action action = () => Service.AddToRepository(FirstFileInfo);
+            Action action = () => Repository.Add(FirstFileInfo);
 
             Assert.Throws<DbUpdateException>(action);
         }
 
         [Fact]
-        public void UpdateInRepository_StatusWithExistingPath_UpdatesStatus()
+        public void UpdateStatus_ExistingPath_UpdatesStatus()
         {
             var expected = FileStatus.Sent;
 
-            Service.UpdateInRepository(FirstFileInfo.Path, FileStatus.Sent);
+            Repository.UpdateStatus(FirstFileInfo.Path, FileStatus.Sent);
             
             var fileInfo = ArrangeContext.Find<FileInfo>(FirstFileInfo.Path);
             var actual = fileInfo.Status;
-            ArrangeContext.Dispose();
 
             Assert.Equal(expected, actual); 
         }
 
         [Fact]
-        public void UpdateInRepository_StatusWithNonExistingPath_ThrowsDbUpdateException()
+        public void UpdateStatus_NonExistingPath_ThrowsDbUpdateException()
         {
-            Action action = () => Service.UpdateInRepository("thispathisnotthere", FileStatus.Sent);
+            Action action = () => Repository.UpdateStatus("thispathisnotthere", FileStatus.Sent);
 
             Assert.Throws<DbUpdateException>(action);
         }
 
         [Fact]
-        public void UpdateInRepository_LastWriteTimeWithExistingPath_UpdatesTime()
+        public void UpdateWriteTime_ExistingPath_UpdatesTime()
         {
             var expected = newWriteTime;
 
-            Service.UpdateInRepository(FirstFileInfo.Path, newWriteTime);
+            Repository.UpdateWriteTime(FirstFileInfo.Path, newWriteTime);
 
             var fileInfo = ArrangeContext.Find<FileInfo>(FirstFileInfo.Path);
             var actual = fileInfo.LastWriteTime;
-            ArrangeContext.Dispose();
 
             Assert.Equal(expected,actual);
         }
 
         [Fact]
-        public void UpdateInRepository_LastWriteTimeWithNonExistingPath_ThrowsDbUpdateException()
+        public void UpdateWriteTime_NonExistingPath_ThrowsDbUpdateException()
         {
-            Action action = () => Service.UpdateInRepository("thispathisnotthere", newWriteTime);
+            Action action = () => Repository.UpdateWriteTime("thispathisnotthere", newWriteTime);
 
             Assert.Throws<DbUpdateException>(action);
         }

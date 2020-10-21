@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -14,11 +15,15 @@ namespace ExportFromFTP
         private readonly ILogger<Worker> _logger;
         private readonly WinscpOptions _sessionOptions;
         private Session _session = new Session();
-        
-        public Worker(ILogger<Worker> logger, IOptions<WinscpOptions> sessionOptions)
+        private IServiceProvider _serviceProvider;
+
+        public Worker(ILogger<Worker> logger, 
+                      IOptions<WinscpOptions> sessionOptions,
+                      IServiceProvider serviceProvider)
         {
             _logger = logger;
             _sessionOptions = sessionOptions.Value;
+            _serviceProvider = serviceProvider;
         }
 
         public override Task StartAsync(CancellationToken stoppingToken)
@@ -59,14 +64,19 @@ namespace ExportFromFTP
         {
             try
             {
-                IEnumerable<RemoteFileInfo> fileList = 
+                IEnumerable<RemoteFileInfo> remoteFileList = 
                     _session.EnumerateRemoteFiles("/","*.*",EnumerationOptions.None);
 
-                foreach (RemoteFileInfo remotefileInfo in fileList)
+                foreach (RemoteFileInfo remoteFileInfo in remoteFileList)
                 {
-                    
-                    _logger.LogInformation("{filename}", remotefileInfo.Name);
-                    Console.WriteLine($@"{remotefileInfo.Name} has {remotefileInfo.Length} bytes and has been created at {remotefileInfo.LastWriteTime}");
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var _repository = scope.ServiceProvider.GetRequiredService<FileInfoRepository>(); 
+                        var fileInfo =_repository.Get(remoteFileInfo.FullName);
+                        Console.WriteLine(fileInfo?.Path ?? "notfound");
+                    }
+                    //_logger.LogInformation("{filename}", remoteFileInfo.Name);
+                    //Console.WriteLine($@"{remoteFileInfo.Name} has {remoteFileInfo.Fullname} path and has been created at {remoteFileInfo.LastWriteTime}");
                 }
             }
             catch (Exception e)

@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ExportFromFTP.Migrations
 {
-    [DbContext(typeof(FileContext))]
+    [DbContext(typeof(FileInfoContext))]
     [Migration("20200928193142_InitialCreate")]
     partial class InitialCreate
     {

@@ -2,9 +2,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ExportFromFTP
 {
-    public class FileContext: DbContext
+    public class FileInfoContext: DbContext
     {
-        public FileContext(DbContextOptions<FileContext> options) : base(options) { }
+        public FileInfoContext(DbContextOptions<FileInfoContext> options) : base(options) { }
         public DbSet<FileInfo> FilesInfo {get; set;} = null!;
     }
 }

@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ExportFromFTP.Migrations
 {
-    [DbContext(typeof(FileContext))]
+    [DbContext(typeof(FileInfoContext))]
     partial class FileContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)

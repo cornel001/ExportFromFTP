@@ -2,28 +2,28 @@ using System;
 
 namespace ExportFromFTP
 {
-    public class RepositoryService
+    public class FileInfoRepository
     {
-        private FileContext _context;
+        private FileInfoContext _context;
 
-        public RepositoryService(FileContext context)
+        public FileInfoRepository(FileInfoContext context)
         {
             _context = context;
         }
 
-        public FileInfo GetFromRepository(string path)
+        public FileInfo Get(string path)
         {
             return _context.Find<FileInfo>(path);
         }
         
-        public FileInfo AddToRepository(FileInfo fileInfo)
+        public FileInfo Add(FileInfo fileInfo)
         {
             _context.Add<FileInfo>(fileInfo);
             _context.SaveChanges();
             return fileInfo;
         }
 
-        public void UpdateInRepository(string path, FileStatus fileStatus)
+        public void UpdateStatus(string path, FileStatus fileStatus)
         {
             var fileInfo = _context.Find<FileInfo>(path);
 
@@ -34,7 +34,7 @@ namespace ExportFromFTP
             _context.SaveChanges();
         }
 
-        public void UpdateInRepository(string path, DateTime writeTime)
+        public void UpdateWriteTime(string path, DateTime writeTime)
         {
             //throw new NotImplementedException();
             var fileInfo = _context.Find<FileInfo>(path);
