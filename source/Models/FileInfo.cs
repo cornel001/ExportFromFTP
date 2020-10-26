@@ -13,8 +13,8 @@ namespace ExportFromFTP
         }
 
         [Key]
-        public string Path {get; set;} = null!;
-        public DateTime WriteTime {get; set;} 
+        public string Path {get; private set;} = null!;
+        public DateTime WriteTime {get; private set;} 
         public DateTime? LastWriteTime {get; set;}
         public FileStatus Status {get; set;}
     }
