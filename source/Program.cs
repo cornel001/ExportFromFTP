@@ -46,6 +46,7 @@ namespace ExportFromFTP
                     services.AddDbContext<FileInfoContext>(options => 
                         options.UseSqlServer(Configuration.GetConnectionString("ExportFromFTP")));
                     services.AddScoped<FileInfoRepository>();
+                    services.AddSingleton<IFtpService, FtpService>();
                 })
                 .ConfigureLogging(logging => logging.ClearProviders())
                 .UseSerilog()

@@ -5,58 +5,26 @@ using System.Collections.Generic;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using WinSCP;
 
 namespace ExportFromFTP
 {
     public class Worker : BackgroundService
     {
         private readonly ILogger<Worker> _logger;
-        private readonly WinscpOptions _sessionOptions;
-        private Session _session = new Session();
+        private IFtpService _ftpService;
         private IServiceProvider _serviceProvider;
 
         public Worker(ILogger<Worker> logger, 
-                      IOptions<WinscpOptions> sessionOptions,
+                      IFtpService ftpService,
                       IServiceProvider serviceProvider)
         {
             _logger = logger;
-            _sessionOptions = sessionOptions.Value;
+            _ftpService = ftpService;
             _serviceProvider = serviceProvider;
         }
 
         public override Task StartAsync(CancellationToken stoppingToken)
         {
-            SessionOptions sessionOptions;
-            try
-            {
-                sessionOptions = new SessionOptions()
-                {
-                    Protocol = Enum.Parse<Protocol>(_sessionOptions.Protocol),
-                    HostName = _sessionOptions.HostName,
-                    UserName = _sessionOptions.UserName,
-                    Password = _sessionOptions.Password
-                };
-            }
-            catch (Exception e)
-            {
-                _logger.LogCritical(e, 
-                    "Error loading configuration for FTP session: {message}", e.Message);
-                throw;
-            }
-
-            try
-            {
-                _session.Open(sessionOptions);
-            }
-            catch (Exception e)
-            {
-                _logger.LogCritical(e, 
-                    "Error opening FTP session: {message}", e.Message);
-                throw;
-            }
-
             return base.StartAsync(stoppingToken);
         }
 
@@ -64,19 +32,16 @@ namespace ExportFromFTP
         {
             try
             {
-                IEnumerable<RemoteFileInfo> remoteFileList = 
-                    _session.EnumerateRemoteFiles("/","*.*",EnumerationOptions.None);
+                IEnumerable<FileInfo> fileList = _ftpService.GetFiles();
 
-                foreach (RemoteFileInfo remoteFileInfo in remoteFileList)
+                foreach (FileInfo fileInfo in fileList)
                 {
                     using (var scope = _serviceProvider.CreateScope())
                     {
                         var _repository = scope.ServiceProvider.GetRequiredService<FileInfoRepository>(); 
-                        var fileInfo =_repository.Get(remoteFileInfo.FullName);
-                        Console.WriteLine(fileInfo?.Path ?? "notfound");
+                        var fileInfo2 =_repository.Get(fileInfo.Path);
+                        Console.WriteLine(fileInfo2?.Path ?? "notfound");
                     }
-                    //_logger.LogInformation("{filename}", remoteFileInfo.Name);
-                    //Console.WriteLine($@"{remoteFileInfo.Name} has {remoteFileInfo.Fullname} path and has been created at {remoteFileInfo.LastWriteTime}");
                 }
             }
             catch (Exception e)
@@ -101,7 +66,7 @@ namespace ExportFromFTP
 
         public override void Dispose()
         {
-            _session.Dispose();
+            _ftpService.Dispose();
             _logger.LogInformation("Am inchis conexiunea FTP.");
         }
     }
