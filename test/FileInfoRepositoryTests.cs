@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 using FluentAssertions; 
@@ -31,7 +32,7 @@ namespace ExportFromFTP.Tests
             
             using (var setupContext = new FileInfoContext(contextOptions))
             {
-                setupContext.RemoveRange(setupContext.FilesInfo.ToListAsync().Result);
+                setupContext.RemoveRange(setupContext.FilesInfo.ToList());
                 setupContext.Add(FirstFileInfo);            
                 setupContext.SaveChanges();
             }            
@@ -41,6 +42,22 @@ namespace ExportFromFTP.Tests
         {            
             RepositoryContext.Dispose();
             ArrangeContext.Dispose();
+        }
+
+        [Fact]
+        public void Exists_ExistingPath_ReturnsTrue()
+        {
+            var found = Repository.Exists(FirstFileInfo.Path);
+
+            Assert.True(found);
+        }
+
+        [Fact]
+        public void Exists_NonExistingPath_ReturnsFalse()
+        {
+            var found = Repository.Exists("thispathisnotthere");
+
+            Assert.False(found);
         }
 
         [Fact]

@@ -17,6 +17,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="3.1.5" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="3.1.5" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
-    <PackageReference Include="WinSCP" Version="5.17.7" />
+    <PackageReference Include="WinSCP" Version="5.17.8" />
   </ItemGroup>
 </Project>

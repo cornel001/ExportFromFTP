@@ -1,14 +1,21 @@
 using System;
+using System.Linq;
+//using Microsoft.EntityFrameworkCore;
 
 namespace ExportFromFTP
 {
-    public class FileInfoRepository
+    public class FileInfoRepository : IFileInfoRepository
     {
         private FileInfoContext _context;
 
         public FileInfoRepository(FileInfoContext context)
         {
             _context = context;
+        }
+
+        public bool Exists(string path)
+        {
+            return _context.FilesInfo.Any(i => i.Path == path);
         }
 
         public FileInfo Get(string path)
