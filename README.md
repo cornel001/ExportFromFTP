@@ -1,0 +1,3 @@
+# ExportFromFTP
+.NET Core project based on BackgroundService. Work in progress...
+Sample project based on legacy project (refactoring), used also to help improve and implement .NET Core knowledge.
