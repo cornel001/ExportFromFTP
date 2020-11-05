@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using WinSCP;
@@ -23,7 +24,7 @@ namespace ExportFromFTP
         {
             if (_session.Opened) return;
 
-             SessionOptions sessionOptions;
+            SessionOptions sessionOptions;
             
             try
             {
@@ -54,13 +55,37 @@ namespace ExportFromFTP
             }
         }
 
-        public IEnumerable<FileInfo> GetFiles()
+        public IEnumerable<FileInfo> GetFilesInfo()
         {
             OpenSession();
             IEnumerable<RemoteFileInfo> remoteFileList = 
-                _session.EnumerateRemoteFiles("/","*.*",EnumerationOptions.None);
+                _session.EnumerateRemoteFiles("/","*.*", WinSCP.EnumerationOptions.None);
 
             return remoteFileList.Select(r => new FileInfo(r.FullName, r.LastWriteTime));
+        }
+
+        public IEnumerable<byte> GetFile(string path)
+        {
+            var localTempFile = Path.GetTempFileName();
+
+            OpenSession();
+            try
+            {
+                _session.GetFileToDirectory(path, localTempFile);
+
+                return File.ReadAllBytes(localTempFile);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e,
+                    "Error retrieving remote bytes for file {filepath} : {message}",
+                    path, e.Message);
+                throw;
+            }
+            finally
+            {
+                File.Delete(localTempFile);
+            }
         }
 
         public void DeleteFile(string path)
