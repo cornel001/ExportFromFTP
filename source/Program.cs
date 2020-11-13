@@ -40,13 +40,14 @@ namespace ExportFromFTP
             Host.CreateDefaultBuilder(args)
                 .ConfigureServices((hostContext, services) => 
                 {
-                    services.AddHostedService<Worker>();
+                    services.AddHostedService<ExportWorker>();
                     services.Configure<WinscpOptions>(
                         hostContext.Configuration.GetSection("WinscpOptions"));
                     services.AddDbContext<FileInfoContext>(options => 
                         options.UseSqlServer(Configuration.GetConnectionString("ExportFromFTP")));
                     services.AddScoped<FileInfoRepository>();
                     services.AddSingleton<IFtpService, FtpService>();
+                    services.AddSingleton<IExportService, ExportService>();
                 })
                 .ConfigureLogging(logging => logging.ClearProviders())
                 .UseSerilog()
