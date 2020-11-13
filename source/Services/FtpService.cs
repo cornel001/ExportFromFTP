@@ -75,12 +75,13 @@ namespace ExportFromFTP
 
         public ICollection<byte>? GetFile(string path)
         {
-            var localTempFile = Path.GetTempFileName();
+            string? localTempFile = null;
 
             OpenSession();
             try
             {
-                _session.GetFileToDirectory(path, localTempFile);
+                localTempFile = _session.GetFileToDirectory(path, Path.GetTempPath())
+                    .Destination;
 
                 return File.ReadAllBytes(localTempFile);
             }
@@ -93,7 +94,8 @@ namespace ExportFromFTP
             }
             finally
             {
-                File.Delete(localTempFile);
+                if (localTempFile != null)
+                    File.Delete(localTempFile);
             }
         }
 
