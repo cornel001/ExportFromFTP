@@ -1,56 +1,40 @@
-using System;
-using System.Linq;
-//using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace ExportFromFTP
 {
     public class FileInfoRepository : IFileInfoRepository
     {
         private FileInfoContext _context;
-
-        public FileInfoRepository(FileInfoContext context)
+        private ILogger<FileInfoRepository> _logger;
+        public FileInfoRepository(FileInfoContext context, 
+                                  ILogger<FileInfoRepository> logger)
         {
             _context = context;
-        }
-
-        public bool Exists(string path)
-        {
-            return _context.FilesInfo.Any(i => i.Path == path);
+            _logger = logger;
         }
 
         public FileInfo Get(string path)
         {
-            return _context.Find<FileInfo>(path);
-        }
-        
-        public FileInfo Add(FileInfo fileInfo)
-        {
-            _context.Add<FileInfo>(fileInfo);
-            _context.SaveChanges();
-            return fileInfo;
+            return _context.FilesInfo.Find(path);
         }
 
-        public void UpdateStatus(string path, FileStatus fileStatus)
-        {
-            var fileInfo = _context.Find<FileInfo>(path);
+        public void Save(FileInfo fileInfo)
+        {            
+            if (_context.Entry(fileInfo).State == EntityState.Detached)
+                _context.Add(fileInfo);
+            
+            try
+            {
+                _context.SaveChanges();
+            }
+            catch (DbUpdateException e)
+            {
+                _logger.LogCritical(e, "Error saving to repository: {message}", e.Message);
+                throw;
+            }
 
-            if (fileInfo == null)
-                throw new Microsoft.EntityFrameworkCore.DbUpdateException(); 
-
-            fileInfo.Status = fileStatus;
-            _context.SaveChanges();
         }
 
-        public void UpdateWriteTime(string path, DateTime writeTime)
-        {
-            //throw new NotImplementedException();
-            var fileInfo = _context.Find<FileInfo>(path);
-
-            if (fileInfo == null)
-                throw new Microsoft.EntityFrameworkCore.DbUpdateException();
-
-            fileInfo.LastWriteTime = writeTime;
-            _context.SaveChanges();
-        }
     }
 }

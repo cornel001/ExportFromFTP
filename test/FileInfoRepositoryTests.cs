@@ -8,32 +8,26 @@ namespace ExportFromFTP.Tests
 {
     public class FileInfoRepositoryTests
     {
+        protected DbContextOptions<FileInfoContext> ContextOptions {get;} = 
+            new DbContextOptionsBuilder<FileInfoContext>()
+            .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=ExportFromFTP;Trusted_Connection=True;")
+            .Options;
         protected FileInfoContext RepositoryContext {get;}
         protected FileInfoRepository Repository {get;}
-        protected FileInfoContext ArrangeContext {get;}
-        protected FileInfo FirstFileInfo {get;} = new FileInfo(
-            "/IMG_20160104_230848.jpg",
-            new DateTime(2020,10,01,14,13,21)
-        );
-        protected FileInfo AnotherFileInfo {get;} = new FileInfo(
-            "/IMG_20160104_230850.jpg",
-            new DateTime(2020,10,01,14,13,23)
-        );
-        protected DateTime newWriteTime {get;} = new DateTime(2020,10,10,14,10,12);
+        private FileInfo[] _sampleList = {
+            new FileInfo("/IMG_20160104_230848.jpg", new DateTime(2020,10,01,14,13,21)),
+            new FileInfo("/IMG_20160104_230850.jpg", new DateTime(2020,10,01,14,13,23))
+        };
 
         public FileInfoRepositoryTests()
         {
-            var contextOptions = new DbContextOptionsBuilder<FileInfoContext>()
-                .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=ExportFromFTP;Trusted_Connection=True;")
-                .Options;
-            RepositoryContext = new FileInfoContext(contextOptions);
-            Repository = new FileInfoRepository(RepositoryContext);
-            ArrangeContext = new FileInfoContext(contextOptions);
+            RepositoryContext = GetNewContext();
+            Repository = new FileInfoRepository(RepositoryContext, null);
             
-            using (var setupContext = new FileInfoContext(contextOptions))
+            using (var setupContext = new FileInfoContext(ContextOptions))
             {
                 setupContext.RemoveRange(setupContext.FilesInfo.ToList());
-                setupContext.Add(FirstFileInfo);            
+                setupContext.Add(_sampleList[0]);            
                 setupContext.SaveChanges();
             }            
         }
@@ -41,31 +35,19 @@ namespace ExportFromFTP.Tests
         public void Dispose()
         {            
             RepositoryContext.Dispose();
-            ArrangeContext.Dispose();
         }
 
-        [Fact]
-        public void Exists_ExistingPath_ReturnsTrue()
+        private FileInfoContext GetNewContext()
         {
-            var found = Repository.Exists(FirstFileInfo.Path);
-
-            Assert.True(found);
-        }
-
-        [Fact]
-        public void Exists_NonExistingPath_ReturnsFalse()
-        {
-            var found = Repository.Exists("thispathisnotthere");
-
-            Assert.False(found);
+            return new FileInfoContext(ContextOptions);
         }
 
         [Fact]
         public void Get_ExistingPath_ReturnsItem()
         {
-            var expected = FirstFileInfo;
+            var expected = _sampleList[0];
 
-            var actual = Repository.Get(FirstFileInfo.Path);
+            var actual = Repository.Get(expected.Path);
 
             actual.Should().BeEquivalentTo(expected);
         }
@@ -79,63 +61,37 @@ namespace ExportFromFTP.Tests
         }
 
         [Fact]
-        public void Add_NewPath_ReturnsNewFileInfo()
+        public void Save_NewPath_ItemSavedAsNew()
         {
-            var expected = Repository.Add(AnotherFileInfo);
+            FileInfo expected = _sampleList[1];
+            FileInfo actual;
 
-            var actual = ArrangeContext.Find<FileInfo>(AnotherFileInfo.Path);
+            Repository.Save(expected);
+
+            using (var context = GetNewContext())
+            {
+                actual = context.FilesInfo.Find(expected.Path);
+            }
 
             actual.Should().BeEquivalentTo(expected);
         }
 
         [Fact]
-        public void Add_ExistingPath_ThrowsDbUpdateException()
+        public void Save_ExistingPath_ItemSavedAsUpdated()
         {
-            Action action = () => Repository.Add(FirstFileInfo);
-
-            Assert.Throws<DbUpdateException>(action);
-        }
-
-        [Fact]
-        public void UpdateStatus_ExistingPath_UpdatesStatus()
-        {
-            var expected = FileStatus.Sent;
-
-            Repository.UpdateStatus(FirstFileInfo.Path, FileStatus.Sent);
+            FileInfo expected = RepositoryContext.FilesInfo.Find(_sampleList[0].Path);
+            FileInfo actual;
+            expected.Status = FileStatus.Sent;
+            expected.LastWriteTime = new DateTime(2020,10,10,14,10,12);;
             
-            var fileInfo = ArrangeContext.Find<FileInfo>(FirstFileInfo.Path);
-            var actual = fileInfo.Status;
+            Repository.Save(expected);
 
-            Assert.Equal(expected, actual); 
-        }
+            using (var context = GetNewContext())
+            {
+                actual = context.FilesInfo.Find(expected.Path);
+            }
 
-        [Fact]
-        public void UpdateStatus_NonExistingPath_ThrowsDbUpdateException()
-        {
-            Action action = () => Repository.UpdateStatus("thispathisnotthere", FileStatus.Sent);
-
-            Assert.Throws<DbUpdateException>(action);
-        }
-
-        [Fact]
-        public void UpdateWriteTime_ExistingPath_UpdatesTime()
-        {
-            var expected = newWriteTime;
-
-            Repository.UpdateWriteTime(FirstFileInfo.Path, newWriteTime);
-
-            var fileInfo = ArrangeContext.Find<FileInfo>(FirstFileInfo.Path);
-            var actual = fileInfo.LastWriteTime;
-
-            Assert.Equal(expected,actual);
-        }
-
-        [Fact]
-        public void UpdateWriteTime_NonExistingPath_ThrowsDbUpdateException()
-        {
-            Action action = () => Repository.UpdateWriteTime("thispathisnotthere", newWriteTime);
-
-            Assert.Throws<DbUpdateException>(action);
+            actual.Should().BeEquivalentTo(expected);
         }
     }
 }
