@@ -14,10 +14,10 @@ namespace ExportFromFTP
         private readonly WinscpOptions _sessionOptions;
         private Session _session = new Session();
 
-        public FtpService(ILogger<FtpService> logger, IOptions<WinscpOptions> sessionOptions)
+        public FtpService(IOptions<WinscpOptions> sessionOptions, ILogger<FtpService> logger)
         {
-            _logger = logger;
             _sessionOptions = sessionOptions.Value;
+            _logger = logger;
         }
         
         private void OpenSession()
@@ -55,16 +55,25 @@ namespace ExportFromFTP
             }
         }
 
-        public IEnumerable<FileInfo> GetFilesInfo()
+        public IEnumerable<ValueTuple<string, DateTime>> GetFilesInfo()
         {
             OpenSession();
-            IEnumerable<RemoteFileInfo> remoteFileList = 
-                _session.EnumerateRemoteFiles("/","*.*", WinSCP.EnumerationOptions.None);
-
-            return remoteFileList.Select(r => new FileInfo(r.FullName, r.LastWriteTime));
+            try
+            {
+                return _session.EnumerateRemoteFiles("/", 
+                                                     "*.*", 
+                                                     WinSCP.EnumerationOptions.None)
+                    .Select(r => (r.FullName, r.LastWriteTime));
+            }
+            catch (Exception e)
+            {
+                _logger.LogCritical(e,
+                    "Error retrieving list of files from FTP: {message}", e.Message);
+                throw;
+            }
         }
 
-        public IEnumerable<byte> GetFile(string path)
+        public ICollection<byte>? GetFile(string path)
         {
             var localTempFile = Path.GetTempFileName();
 
@@ -80,7 +89,7 @@ namespace ExportFromFTP
                 _logger.LogError(e,
                     "Error retrieving remote bytes for file {filepath} : {message}",
                     path, e.Message);
-                throw;
+                return null;
             }
             finally
             {
@@ -88,18 +97,19 @@ namespace ExportFromFTP
             }
         }
 
-        public void DeleteFile(string path)
+        public bool DeleteFile(string path)
         {
             OpenSession();
             try
             {
                 _session.RemoveFile(path);
+                return true;
             }
             catch (Exception e)
             {
                 _logger.LogError(e,
                     "Error deleting exported file, from FTP storage: {message}", e.Message);
-                throw;
+                return false;
             }
         }
 
