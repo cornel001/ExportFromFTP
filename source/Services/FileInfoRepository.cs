@@ -5,8 +5,9 @@ namespace ExportFromFTP
 {
     public class FileInfoRepository : IFileInfoRepository
     {
-        private FileInfoContext _context;
-        private ILogger<FileInfoRepository> _logger;
+        private readonly FileInfoContext _context;
+        private readonly ILogger<FileInfoRepository> _logger;
+        
         public FileInfoRepository(FileInfoContext context, 
                                   ILogger<FileInfoRepository> logger)
         {
