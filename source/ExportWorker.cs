@@ -10,19 +10,19 @@ namespace ExportFromFTP
     public class ExportWorker : BackgroundService
     {
         private readonly ILogger<ExportWorker> _logger;
-        private IFtpService _ftpService;
-        private IServiceProvider _serviceProvider;
-        private IExportService _exportService;
+        private readonly IFtpService _ftpService;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IExportService _exportService;
 
-        public ExportWorker(ILogger<ExportWorker> logger, 
-                      IFtpService ftpService,
-                      IServiceProvider serviceProvider,
-                      IExportService exportService)
+        public ExportWorker(IFtpService ftpService,
+                            IExportService exportService,
+                            IServiceProvider serviceProvider,
+                            ILogger<ExportWorker> logger)
         {
-            _logger = logger;
             _ftpService = ftpService;
-            _serviceProvider = serviceProvider;
             _exportService = exportService;
+            _serviceProvider = serviceProvider;
+            _logger = logger;
         }
 
         public override Task StartAsync(CancellationToken stoppingToken)
@@ -39,7 +39,7 @@ namespace ExportFromFTP
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var _repository = scope.ServiceProvider.GetRequiredService<FileInfoRepository>(); 
-                    var fileInfo =_repository.Get(remotePath) ?? new FileInfo(remotePath,remoteWriteTime);
+                    var fileInfo =_repository.Get(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
 
                     //if status = finished then file has been processed completed already
                     //and we do not export it again 
@@ -53,7 +53,7 @@ namespace ExportFromFTP
                     if (fileInfo.Status == FileStatus.Initial)
                     {
                         var fileBytes = _ftpService.GetFile(fileInfo.Path);
-                        if (!(fileBytes is null))
+                        if (fileBytes != null)
                             if (_exportService.Export(fileBytes))
                                 fileInfo.UpdateStatus();
                     }

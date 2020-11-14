@@ -14,7 +14,8 @@ namespace ExportFromFTP
         private readonly WinscpOptions _sessionOptions;
         private Session _session = new Session();
 
-        public FtpService(IOptions<WinscpOptions> sessionOptions, ILogger<FtpService> logger)
+        public FtpService(IOptions<WinscpOptions> sessionOptions, 
+                          ILogger<FtpService> logger)
         {
             _sessionOptions = sessionOptions.Value;
             _logger = logger;
