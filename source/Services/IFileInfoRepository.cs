@@ -1,8 +1,10 @@
+using System.Threading.Tasks;
+
 namespace ExportFromFTP
 {
     interface IFileInfoRepository
     {
-        FileInfo Get(string path);
-        void Save(FileInfo fileInfo);
+        Task<FileInfo> GetAsync(string path);
+        Task SaveAsync(FileInfo fileInfo);
     }
 }

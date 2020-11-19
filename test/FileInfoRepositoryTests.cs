@@ -43,52 +43,52 @@ namespace ExportFromFTP.Tests
         }
 
         [Fact]
-        public void Get_ExistingPath_ReturnsItem()
+        public async void Get_ExistingPath_ReturnsItem()
         {
             var expected = _sampleList[0];
 
-            var actual = Repository.Get(expected.Path);
+            var actual = await Repository.GetAsync(expected.Path);
 
             actual.Should().BeEquivalentTo(expected);
         }
 
         [Fact]
-        public void Get_NonExistingPath_ReturnsNull()
+        public async void Get_NonExistingPath_ReturnsNull()
         {
-            var actual = Repository.Get("thispathisnotthere");
+            var actual = await Repository.GetAsync("thispathisnotthere");
 
             Assert.Null(actual);
         }
 
         [Fact]
-        public void Save_NewPath_ItemSavedAsNew()
+        public async void Save_NewPath_ItemSavedAsNew()
         {
             FileInfo expected = _sampleList[1];
             FileInfo actual;
 
-            Repository.Save(expected);
+            await Repository.SaveAsync(expected);
 
             using (var context = GetNewContext())
             {
-                actual = context.FilesInfo.Find(expected.Path);
+                actual = await context.FilesInfo.FindAsync(expected.Path);
             }
 
             actual.Should().BeEquivalentTo(expected);
         }
 
         [Fact]
-        public void Save_ExistingPath_ItemSavedAsUpdated()
+        public async void Save_ExistingPath_ItemSavedAsUpdated()
         {
-            FileInfo expected = RepositoryContext.FilesInfo.Find(_sampleList[0].Path);
+            FileInfo expected = await RepositoryContext.FilesInfo.FindAsync(_sampleList[0].Path);
             FileInfo actual;
             expected.Status = FileStatus.Sent;
             expected.LastWriteTime = new DateTime(2020,10,10,14,10,12);;
             
-            Repository.Save(expected);
+            await Repository.SaveAsync(expected);
 
             using (var context = GetNewContext())
             {
-                actual = context.FilesInfo.Find(expected.Path);
+                actual = await context.FilesInfo.FindAsync(expected.Path);
             }
 
             actual.Should().BeEquivalentTo(expected);

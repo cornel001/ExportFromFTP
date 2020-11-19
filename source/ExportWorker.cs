@@ -39,7 +39,7 @@ namespace ExportFromFTP
                 using (var scope = _serviceProvider.CreateScope())
                 {
                     var _repository = scope.ServiceProvider.GetRequiredService<FileInfoRepository>(); 
-                    var fileInfo =_repository.Get(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
+                    var fileInfo = await _repository.GetAsync(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
 
                     //if status = finished then file has been processed completed already
                     //and we do not export it again 
@@ -64,7 +64,7 @@ namespace ExportFromFTP
                             fileInfo.UpdateStatus();
                     }
 
-                    _repository.Save(fileInfo);
+                    await _repository.SaveAsync(fileInfo);
                 }
             }
 

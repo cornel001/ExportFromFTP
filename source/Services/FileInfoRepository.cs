@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Threading.Tasks;
 
 namespace ExportFromFTP
 {
@@ -15,19 +16,19 @@ namespace ExportFromFTP
             _logger = logger;
         }
 
-        public FileInfo Get(string path)
+        public async Task<FileInfo> GetAsync(string path)
         {
-            return _context.FilesInfo.Find(path);
+            return await _context.FilesInfo.FindAsync(path);
         }
 
-        public void Save(FileInfo fileInfo)
+        public async Task SaveAsync(FileInfo fileInfo)
         {            
             if (_context.Entry(fileInfo).State == EntityState.Detached)
-                _context.Add(fileInfo);
+                await _context.AddAsync(fileInfo);
             
             try
             {
-                _context.SaveChanges();
+               await _context.SaveChangesAsync();
             }
             catch (DbUpdateException e)
             {
