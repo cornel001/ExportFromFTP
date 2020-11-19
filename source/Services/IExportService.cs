@@ -1,9 +1,10 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ExportFromFTP
 {
     public interface IExportService
     {
-        bool Export(ICollection<byte> file);
+        Task<bool> Export(ICollection<byte> file);
     }
 }

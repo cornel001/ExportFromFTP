@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 
 namespace ExportFromFTP
@@ -12,10 +13,10 @@ namespace ExportFromFTP
             _logger = logger;
         }
         
-        public bool Export(ICollection<byte> file)
+        public async Task<bool> Export(ICollection<byte> file)
         {
             _logger.LogInformation("Exported {count} bytes", file.Count);
-            return true;
+            return await Task.FromResult(true);
         }
     }
 }

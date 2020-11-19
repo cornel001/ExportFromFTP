@@ -54,7 +54,7 @@ namespace ExportFromFTP
                     {
                         var fileBytes = _ftpService.GetFile(fileInfo.Path);
                         if (fileBytes != null)
-                            if (_exportService.Export(fileBytes))
+                            if (await _exportService.Export(fileBytes))
                                 fileInfo.UpdateStatus();
                     }
 
