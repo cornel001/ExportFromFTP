@@ -1,4 +1,5 @@
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
@@ -74,7 +75,7 @@ namespace ExportFromFTP
             }
         }
 
-        public ICollection<byte>? GetFile(string path)
+        public async Task<ICollection<byte>?> GetFileAsync(string path)
         {
             string? localTempFile = null;
 
@@ -84,14 +85,14 @@ namespace ExportFromFTP
                 localTempFile = _session.GetFileToDirectory(path, Path.GetTempPath())
                     .Destination;
 
-                return File.ReadAllBytes(localTempFile);
+                return await File.ReadAllBytesAsync(localTempFile);
             }
             catch (Exception e)
             {
                 _logger.LogError(e,
                     "Error retrieving remote bytes for file {filepath} : {message}",
                     path, e.Message);
-                return null;
+                return await Task.FromResult<ICollection<byte>?>(null);
             }
             finally
             {
