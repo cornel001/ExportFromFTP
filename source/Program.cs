@@ -25,12 +25,14 @@ namespace ExportFromFTP
                 .CreateLogger();
 
             var host = CreateHostBuilder(args).Build();
+            
             var logger = host.Services.GetRequiredService<ILogger<Program>>();
             logger.LogInformation("Host built.");
             logger.LogInformation("App is Windows Service: {IsWinService}",
                                    WindowsServiceHelpers.IsWindowsService());
             logger.LogInformation("Environment is {EnvName}",
                                    host.Services.GetRequiredService<IHostEnvironment>().EnvironmentName);
+            
             host.Run();
 
             Log.CloseAndFlush();
@@ -45,7 +47,7 @@ namespace ExportFromFTP
                         hostContext.Configuration.GetSection("WinscpOptions"));
                     services.AddDbContext<FileInfoContext>(options => 
                         options.UseSqlServer(Configuration.GetConnectionString("ExportFromFTP")));
-                    services.AddScoped<FileInfoRepository>();
+                    services.AddScoped<IFileInfoRepository, FileInfoRepository>();
                     services.AddSingleton<IFtpService, FtpService>();
                     services.AddSingleton<IExportService, ExportService>();
                 })
