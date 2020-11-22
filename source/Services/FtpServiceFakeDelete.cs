@@ -64,7 +64,7 @@ namespace ExportFromFTP
             {
                 return _session.EnumerateRemoteFiles("/", 
                                                      "*.*", 
-                                                     WinSCP.EnumerationOptions.None)
+                                                     WinSCP.EnumerationOptions.AllDirectories)
                     .Select(r => (r.FullName, r.LastWriteTime));
             }
             catch (Exception e)
