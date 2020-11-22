@@ -36,36 +36,34 @@ namespace ExportFromFTP
 
             foreach (var (remotePath, remoteWriteTime) in fileList)
             {
-                using (var scope = _serviceProvider.CreateScope())
+                using var scope = _serviceProvider.CreateScope();
+                var _repository = scope.ServiceProvider.GetRequiredService<IFileInfoRepository>(); 
+                var fileInfo = await _repository.GetAsync(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
+
+                //if status = finished then file has been processed completed already
+                //and we do not export it again 
+                //only record when it showed on FTP again, and remove it
+                if (fileInfo.Status == FileStatus.Finished)
                 {
-                    var _repository = scope.ServiceProvider.GetRequiredService<IFileInfoRepository>(); 
-                    var fileInfo = await _repository.GetAsync(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
-
-                    //if status = finished then file has been processed completed already
-                    //and we do not export it again 
-                    //only record when it showed on FTP again, and remove it
-                    if (fileInfo.Status == FileStatus.Finished)
-                    {
-                        fileInfo.UpdateWriteTime(remoteWriteTime);
-                        _ftpService.DeleteFile(fileInfo.Path);
-                    }
-
-                    if (fileInfo.Status == FileStatus.Initial)
-                    {
-                        var fileBytes = await _ftpService.GetFileAsync(fileInfo.Path);
-                        if (fileBytes != null)
-                            if (await _exportService.Export(fileBytes))
-                                fileInfo.UpdateStatus();
-                    }
-
-                    if (fileInfo.Status == FileStatus.Sent)
-                    {
-                        if (_ftpService.DeleteFile(fileInfo.Path))
-                            fileInfo.UpdateStatus();
-                    }
-
-                    await _repository.SaveAsync(fileInfo);
+                    fileInfo.UpdateWriteTime(remoteWriteTime);
+                    _ftpService.DeleteFile(fileInfo.Path);
                 }
+
+                if (fileInfo.Status == FileStatus.Initial)
+                {
+                    var fileBytes = await _ftpService.GetFileAsync(fileInfo.Path);
+                    if (fileBytes != null)
+                        if (await _exportService.Export(fileBytes))
+                            fileInfo.UpdateStatus();
+                }
+
+                if (fileInfo.Status == FileStatus.Sent)
+                {
+                    if (_ftpService.DeleteFile(fileInfo.Path))
+                        fileInfo.UpdateStatus();
+                }
+
+                await _repository.SaveAsync(fileInfo);
             }
 
             await Task.CompletedTask;
