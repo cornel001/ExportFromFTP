@@ -8,13 +8,13 @@ namespace ExportFromFTP.Tests
 {
     public class FileInfoRepositoryTests
     {
-        protected DbContextOptions<FileInfoContext> ContextOptions {get;} = 
+        protected static DbContextOptions<FileInfoContext> ContextOptions {get;} = 
             new DbContextOptionsBuilder<FileInfoContext>()
             .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=ExportFromFTP;Trusted_Connection=True;")
             .Options;
         protected FileInfoContext RepositoryContext {get;}
         protected IFileInfoRepository Repository {get;}
-        private FileInfo[] _sampleList = {
+        private static FileInfo[] _sampleList = {
             new FileInfo("/IMG_20160104_230848.jpg", new DateTime(2020,10,01,14,13,21)),
             new FileInfo("/IMG_20160104_230850.jpg", new DateTime(2020,10,01,14,13,23))
         };
@@ -68,7 +68,7 @@ namespace ExportFromFTP.Tests
 
             await Repository.SaveAsync(expected);
 
-            using (var context = GetNewContext())
+            await using (var context = GetNewContext())
             {
                 actual = await context.FilesInfo.FindAsync(expected.Path);
             }
@@ -86,7 +86,7 @@ namespace ExportFromFTP.Tests
             
             await Repository.SaveAsync(expected);
 
-            using (var context = GetNewContext())
+            await using (var context = GetNewContext())
             {
                 actual = await context.FilesInfo.FindAsync(expected.Path);
             }
