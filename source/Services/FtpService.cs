@@ -101,7 +101,7 @@ namespace ExportFromFTP
             }
         }
 
-        public bool DeleteFile(string path)
+        public virtual bool DeleteFile(string path)
         {
             OpenSession();
             try
