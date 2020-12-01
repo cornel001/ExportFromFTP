@@ -57,22 +57,27 @@ namespace ExportFromFTP
             }
         }
 
+        // If I later switch to async FTP library, I could change
+        // IEnumerable<> to IAsyncEnumerable<>
         public IEnumerable<ValueTuple<string, DateTime>> GetFilesInfo()
         {
             OpenSession();
-            try
+
+            // Should be moved later to configuration file.
+            const string rootPath = "/";
+            const string rootPathNotFoundErrMsg = "Error retrieving list of files from FTP: Directory does not exist.";
+
+            if (!_session.FileExists(rootPath))
             {
-                return _session.EnumerateRemoteFiles("/", 
-                                                     "*.*", 
-                                                     WinSCP.EnumerationOptions.AllDirectories)
-                    .Select(r => (r.FullName, r.LastWriteTime));
+                _logger.LogCritical(rootPathNotFoundErrMsg);
+                throw new OperationCanceledException(rootPathNotFoundErrMsg);
             }
-            catch (Exception e)
-            {
-                _logger.LogCritical(e,
-                    "Error retrieving list of files from FTP: {message}", e.Message);
-                throw;
-            }
+
+            return _session.EnumerateRemoteFiles(rootPath, 
+                                                 "*.*", 
+                                                 WinSCP.EnumerationOptions.AllDirectories)
+                .Select(r => (r.FullName, r.LastWriteTime));
+
         }
 
         public async Task<ICollection<byte>?> GetFileAsync(string path)
