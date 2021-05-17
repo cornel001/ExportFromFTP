@@ -35,17 +35,14 @@ namespace ExportFromFTP
             var stopWatch = new DebugStopwatch();
             stopWatch.Start();
 
-            var fileList = _ftpService.GetFilesInfo();
-
-            foreach (var (remotePath, remoteWriteTime) in fileList)
+            foreach (var (remotePath, remoteWriteTime) in _ftpService.GetFilesInfo())
             {
                 using var scope = _serviceProvider.CreateScope();
                 var _repository = scope.ServiceProvider.GetRequiredService<IFileInfoRepository>(); 
                 var fileInfo = await _repository.GetAsync(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
 
-                //if status = finished then file has been processed completed already
-                //and we do not export it again 
-                //only record when it showed on FTP again, and remove it
+                // If status = finished then file has been processed complete already and we 
+                // do not export it again. Only record when it showed on FTP again, and remove it
                 if (fileInfo.Status == FileStatus.Finished)
                 {
                     fileInfo.UpdateWriteTime(remoteWriteTime);

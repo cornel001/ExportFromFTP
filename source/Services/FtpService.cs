@@ -13,7 +13,7 @@ namespace ExportFromFTP
     {
         private readonly ILogger<FtpService> _logger;
         private readonly WinscpOptions _sessionOptions;
-        private Session _session = new Session();
+        private readonly Session _session = new Session();
 
         public FtpService(IOptions<WinscpOptions> sessionOptions, 
                           ILogger<FtpService> logger)
