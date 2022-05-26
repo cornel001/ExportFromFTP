@@ -32,9 +32,6 @@ namespace ExportFromFTP
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            var stopWatch = new DebugStopwatch();
-            stopWatch.Start();
-
             foreach (var (remotePath, remoteWriteTime) in _ftpService.GetFilesInfo())
             {
                 using var scope = _serviceProvider.CreateScope();
@@ -65,9 +62,6 @@ namespace ExportFromFTP
 
                 await _repository.SaveAsync(fileInfo);
             }
-
-            stopWatch.Stop();
-            System.Diagnostics.Debug.WriteLine(stopWatch.Elapsed);
 
                // await Task.CompletedTask;
 /*             while (!stoppingToken.IsCancellationRequested)
