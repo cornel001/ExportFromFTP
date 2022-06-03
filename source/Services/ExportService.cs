@@ -19,9 +19,9 @@ namespace ExportFromFTP
         {
             try
             {
-                using var stream = File.Open("ExportService.txt",FileMode.Append,FileAccess.Write);
-                using var writer = new StreamWriter(stream);
-                writer.WriteLine($"Exported {file.Count} bytes");
+                await using var stream = File.Open("ExportService.txt",FileMode.Append,FileAccess.Write, FileShare.Write);
+                await using var writer = new StreamWriter(stream);
+                await writer.WriteLineAsync($"Exported {file.Count} bytes");
             }
             catch (IOException e)
             {
