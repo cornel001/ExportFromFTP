@@ -13,6 +13,7 @@ namespace ExportFromFTP
         public ExportService(ILogger<ExportService> logger)
         {
             _logger = logger;
+            File.Delete("ExportService.txt");
         }
         
         public async Task<bool> Export(ICollection<byte> file)
