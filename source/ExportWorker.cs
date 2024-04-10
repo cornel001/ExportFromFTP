@@ -1,6 +1,9 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,16 +13,13 @@ namespace ExportFromFTP
     public class ExportWorker : BackgroundService
     {
         private readonly ILogger<ExportWorker> _logger;
-        private readonly IFtpService _ftpService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IExportService _exportService;
 
-        public ExportWorker(IFtpService ftpService,
-                            IExportService exportService,
+        public ExportWorker(IExportService exportService,
                             IServiceProvider serviceProvider,
                             ILogger<ExportWorker> logger)
         {
-            _ftpService = ftpService;
             _exportService = exportService;
             _serviceProvider = serviceProvider;
             _logger = logger;
@@ -34,13 +34,32 @@ namespace ExportFromFTP
         {
             _logger.LogInformation(DateTime.Now.ToString());
 
-            var fileInfoList = _ftpService.GetFilesInfo();
+            using var scope = _serviceProvider.CreateScope();
+            var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
 
-            await fileInfoList.ForEachAsync(3, fileInfo => ProcessFile(fileInfo.Item1, fileInfo.Item2));
-            // foreach (var (remotePath, remoteWriteTime) in _ftpService.GetFilesInfo());
+            var fileInfoList = ftpService.GetFilesInfo();
             
-            async Task ProcessFile(string remotePath, DateTime remoteWriteTime)
+            await ProcessFilesAsync(fileInfoList, 3);
+       
+            Task ProcessFilesAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
             {
+                return Task.WhenAll(from partition in Partitioner.Create(source).GetPartitions(dop) 
+                    select Task.Run(async delegate
+                    {
+                        using var scope = _serviceProvider.CreateScope();
+                        var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
+                        using (partition)
+                            while (partition.MoveNext())
+                                await ProcessFile(partition.Current, ftpService).ConfigureAwait(false);
+                        ftpService.Dispose();
+                        _logger.LogInformation("FTP connection closed.");
+                    }));
+            }
+           
+            async Task ProcessFile((string , DateTime) sourceFileInfo, IFtpService ftpService)
+            {
+                var remotePath = sourceFileInfo.Item1;
+                var remoteWriteTime = sourceFileInfo.Item2;
                 using var scope = _serviceProvider.CreateScope();
                 var _repository = scope.ServiceProvider.GetRequiredService<IFileInfoRepository>(); 
                 var fileInfo = await _repository.GetAsync(remotePath) ?? new FileInfo(remotePath, remoteWriteTime);
@@ -50,12 +69,12 @@ namespace ExportFromFTP
                 if (fileInfo.Status == FileStatus.Finished)
                 {
                     fileInfo.UpdateWriteTime(remoteWriteTime);
-                    _ftpService.DeleteFile(fileInfo.Path);
+                    ftpService.DeleteFile(fileInfo.Path);
                 }
 
                 if (fileInfo.Status == FileStatus.Initial)
                 {
-                    var fileBytes = await _ftpService.GetFileAsync(fileInfo.Path);
+                    var fileBytes = await ftpService.GetFileAsync(fileInfo.Path);
                     if (fileBytes != null)
                         if (await _exportService.Export(fileBytes))
                             fileInfo.UpdateStatus();
@@ -63,12 +82,15 @@ namespace ExportFromFTP
 
                 if (fileInfo.Status == FileStatus.Sent)
                 {
-                    if (_ftpService.DeleteFile(fileInfo.Path))
+                    if (ftpService.DeleteFile(fileInfo.Path))
                         fileInfo.UpdateStatus();
                 }
 
                 await _repository.SaveAsync(fileInfo);
             }
+
+            ftpService.Dispose();
+            _logger.LogInformation("FTP connection closed.");
 
             _logger.LogInformation(DateTime.Now.ToString());
 
@@ -86,10 +108,5 @@ namespace ExportFromFTP
             await Task.CompletedTask;
         }
 
-        public override void Dispose()
-        {
-            _ftpService.Dispose();
-            _logger.LogInformation("FTP connection closed.");
-        }
     }
 }

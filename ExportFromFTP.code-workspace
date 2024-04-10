@@ -10,5 +10,7 @@
             "path": "util"
         }
     ],
-    "settings": {}
+    "settings": {
+        "powershell.cwd": "c:\\Users\\ionco\\source\\repos\\ExportFromFTP\\source"
+    }
 }

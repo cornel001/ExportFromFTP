@@ -1,4 +1,5 @@
 using System;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,12 +15,15 @@ namespace ExportFromFTP
         private readonly ILogger<FtpService> _logger;
         private readonly WinscpOptions _sessionOptions;
         private readonly Session _session = new Session();
+        internal static readonly char[] chars = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
 
         public FtpService(IOptions<WinscpOptions> sessionOptions, 
-                          ILogger<FtpService> logger)
+                          ILogger<FtpService> logger,
+                          Boolean withFileTransfer)
         {
             _sessionOptions = sessionOptions.Value;
             _logger = logger;
+            _logger.LogDebug("FTP Service constructor ran");
         }
         
         private void OpenSession()
@@ -83,11 +87,11 @@ namespace ExportFromFTP
         public async Task<ICollection<byte>?> GetFileAsync(string path)
         {
             string? localTempFile = null;
-
+            var localTempPath = Path.GetTempPath() + "ExportFromFTP\\" + GetRandomString(10);
             OpenSession();
             try
             {
-                localTempFile = _session.GetFileToDirectory(path, Path.GetTempPath())
+                localTempFile = _session.GetFileToDirectory(path, localTempPath)
                     .Destination;
 
                 return await File.ReadAllBytesAsync(localTempFile);
@@ -120,6 +124,18 @@ namespace ExportFromFTP
                     "Error deleting exported file, from FTP storage: {message}", e.Message);
                 return false;
             }
+        }
+
+        private static string GetRandomString(int length)
+        {
+            if (length < 1) 
+                throw new ArgumentOutOfRangeException(nameof(length), length, "Length of the string to be generated cannot be less than 1");
+            var randomStringArray = new char[length];
+            for (int i = 0; i < length; i ++)
+            {
+                randomStringArray[i] = chars[RandomNumberGenerator.GetInt32(chars.Length)];
+            }
+            return string.Join("", randomStringArray);
         }
 
         public void Dispose()
