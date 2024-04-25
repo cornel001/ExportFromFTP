@@ -10,25 +10,11 @@ using WinSCP;
 
 namespace ExportFromFTP
 {
-    public class FtpService : IFtpService
+    internal static class FTPSession
     {
-        private readonly ILogger<FtpService> _logger;
-        private readonly WinscpOptions _sessionOptions;
-        private readonly Session _session = new Session();
-        internal static readonly char[] chars = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
-
-        public FtpService(IOptions<WinscpOptions> sessionOptions, 
-                          ILogger<FtpService> logger,
-                          Boolean withFileTransfer)
+        internal static Session OpenNewSession(IOptions<WinscpOptions> sessionOptionsCfg, 
+                                               ILogger<FtpService> logger)
         {
-            _sessionOptions = sessionOptions.Value;
-            _logger = logger;
-            _logger.LogDebug("FTP Service constructor ran");
-        }
-        
-        private void OpenSession()
-        {
-            if (_session.Opened) return;
 
             SessionOptions sessionOptions;
             
@@ -36,37 +22,60 @@ namespace ExportFromFTP
             {
                 sessionOptions = new SessionOptions()
                 {
-                    Protocol = Enum.Parse<Protocol>(_sessionOptions.Protocol),
-                    HostName = _sessionOptions.HostName,
-                    UserName = _sessionOptions.UserName,
-                    Password = _sessionOptions.Password
+                    Protocol = Enum.Parse<Protocol>(sessionOptionsCfg.Value.Protocol),
+                    HostName = sessionOptionsCfg.Value.HostName,
+                    UserName = sessionOptionsCfg.Value.UserName,
+                    Password = sessionOptionsCfg.Value.Password
                 };
             }
             catch (Exception e)
             {
-                _logger.LogCritical(e,
-                    "Error setting configuration for FTP session: {message}", e.Message);
+                logger.LogCritical(e, "Error setting configuration for FTP session: {message}", e.Message);
                 throw;
             }
 
+            Session session = new Session();
+
             try
             {
-                _session.Open(sessionOptions);
+                session.Open(sessionOptions);
             }
             catch (Exception e)
             {
-                _logger.LogCritical(e,
-                    "Error opening FTP session: {message}", e.Message);
+                logger.LogCritical(e, "Error opening FTP session: {message}", e.Message);
                 throw;
             }
+
+            return session;
+        }
+
+        internal static void Dispose(Session session)
+        {
+            session.Close();
+            session.Dispose();
+        }
+    }
+
+    public class FtpService : IFtpService
+    {
+        private readonly ILogger<FtpService> _logger;
+        private readonly Session _session;
+        internal static readonly char[] chars = "abcdefghijklmnopqrstuvwxyz".ToCharArray();
+        private string _localTempPath;
+
+        public FtpService(IOptions<WinscpOptions> sessionOptionsCfg, 
+                          ILogger<FtpService> logger)
+        {
+            _logger = logger;
+            _session = FTPSession.OpenNewSession(sessionOptionsCfg,logger);
+            _localTempPath = CreateTempFolder(logger);
+            _logger.LogDebug("FTP Service constructor ran");
         }
 
         // If I later switch to async FTP library, I could change
         // IEnumerable<> to IAsyncEnumerable<>
         public IEnumerable<ValueTuple<string, DateTime>> GetFilesInfo()
         {
-            OpenSession();
-
             // Should be moved later to configuration file.
             const string rootPath = "/";
             const string rootPathNotFoundErrMsg = "Error retrieving list of files from FTP: Directory does not exist.";
@@ -87,20 +96,16 @@ namespace ExportFromFTP
         public async Task<ICollection<byte>?> GetFileAsync(string path)
         {
             string? localTempFile = null;
-            var localTempPath = Path.GetTempPath() + "ExportFromFTP\\" + GetRandomString(10);
-            OpenSession();
+
             try
             {
-                localTempFile = _session.GetFileToDirectory(path, localTempPath)
-                    .Destination;
-
+                localTempFile = _session.GetFileToDirectory(path, _localTempPath).Destination;
                 return await File.ReadAllBytesAsync(localTempFile);
             }
             catch (Exception e)
             {
                 _logger.LogError(e,
-                    "Error retrieving remote bytes for file {filepath} : {message}",
-                    path, e.Message);
+                    "Error retrieving remote bytes for file {filepath} : {message}", path, e.Message);
                 return await Task.FromResult<ICollection<byte>?>(null);
             }
             finally
@@ -112,7 +117,7 @@ namespace ExportFromFTP
 
         public virtual bool DeleteFile(string path)
         {
-            OpenSession();
+
             try
             {
                 _session.RemoveFile(path);
@@ -124,6 +129,22 @@ namespace ExportFromFTP
                     "Error deleting exported file, from FTP storage: {message}", e.Message);
                 return false;
             }
+        }
+
+        private static string CreateTempFolder(ILogger<FtpService> logger)
+        {
+            var localTempPath = Path.GetTempPath() + "ExportFromFTP\\" + GetRandomString(10);
+
+            try
+            {
+                Directory.CreateDirectory(localTempPath);
+            }
+            catch (Exception e)
+            {
+                logger.LogCritical(e, "Error creating temp folder: {message}", e.Message);
+            }
+        
+            return localTempPath;
         }
 
         private static string GetRandomString(int length)
@@ -140,7 +161,9 @@ namespace ExportFromFTP
 
         public void Dispose()
         {
-            _session.Dispose();
+            _logger.LogInformation("dispose will be called from ftp service's dispose");
+            FTPSession.Dispose(_session);
+            _logger.LogInformation("dispose was called from ftp service's dispose");
         }
     } 
 }

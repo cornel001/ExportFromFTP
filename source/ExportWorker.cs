@@ -41,7 +41,19 @@ namespace ExportFromFTP
             
             await ProcessFilesAsync(fileInfoList, 3);
        
-            Task ProcessFilesAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
+            _logger.LogInformation("parent FTP connection closed.");
+
+            _logger.LogInformation(DateTime.Now.ToString());
+
+               // await Task.CompletedTask;
+/*             while (!stoppingToken.IsCancellationRequested)
+            {
+                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                await Task.Delay(1000, stoppingToken);
+            } */
+        }
+
+        Task ProcessFilesAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
             {
                 return Task.WhenAll(from partition in Partitioner.Create(source).GetPartitions(dop) 
                     select Task.Run(async delegate
@@ -51,12 +63,11 @@ namespace ExportFromFTP
                         using (partition)
                             while (partition.MoveNext())
                                 await ProcessFile(partition.Current, ftpService).ConfigureAwait(false);
-                        ftpService.Dispose();
-                        _logger.LogInformation("FTP connection closed.");
+                        _logger.LogInformation("child FTP connection closed.");
                     }));
             }
-           
-            async Task ProcessFile((string , DateTime) sourceFileInfo, IFtpService ftpService)
+
+        async Task ProcessFile((string , DateTime) sourceFileInfo, IFtpService ftpService)
             {
                 var remotePath = sourceFileInfo.Item1;
                 var remoteWriteTime = sourceFileInfo.Item2;
@@ -88,19 +99,6 @@ namespace ExportFromFTP
 
                 await _repository.SaveAsync(fileInfo);
             }
-
-            ftpService.Dispose();
-            _logger.LogInformation("FTP connection closed.");
-
-            _logger.LogInformation(DateTime.Now.ToString());
-
-               // await Task.CompletedTask;
-/*             while (!stoppingToken.IsCancellationRequested)
-            {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await Task.Delay(1000, stoppingToken);
-            } */
-        }
 
         public override async Task StopAsync(CancellationToken stoppingToken)
         {

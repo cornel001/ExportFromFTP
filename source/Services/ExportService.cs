@@ -26,7 +26,7 @@ namespace ExportFromFTP
             }
             catch (IOException e)
             {
-                _logger.LogCritical(e, "Export Service Malfunction", e.Message);
+                _logger.LogCritical(e, "Export Service Malfunction: {message}", e.Message);
                 throw;
             }
 
