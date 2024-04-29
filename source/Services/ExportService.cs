@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.IO;
+using System.Threading;
 using System;
 using Microsoft.Extensions.Logging;
 
@@ -9,7 +10,7 @@ namespace ExportFromFTP
     public class ExportService : IExportService
     {
         private readonly ILogger<ExportService> _logger;
-        
+        private static readonly SemaphoreSlim semaphore = new SemaphoreSlim(1,1); 
         public ExportService(ILogger<ExportService> logger)
         {
             _logger = logger;
@@ -18,20 +19,23 @@ namespace ExportFromFTP
         
         public async Task<bool> Export(ICollection<byte> file)
         {
+            await semaphore.WaitAsync();
             try
             {
-                await using var stream = File.Open("ExportService.txt",FileMode.Append,FileAccess.Write, FileShare.Write);
-                await using var writer = new StreamWriter(stream);
+                await using var writer = new StreamWriter("ExportService.txt", true);
                 await writer.WriteLineAsync($"Exported {file.Count} bytes");
             }
             catch (IOException e)
             {
-                _logger.LogCritical(e, "Export Service Malfunction: {message}", e.Message);
-                throw;
+                _logger.LogError(e, "Export Service Malfunction: {message}", e.Message);
+                return false;
+            }
+            finally
+            {
+                semaphore.Release();
             }
 
-            //_logger.LogInformation("Exported {count} bytes", file.Count);
-            return await Task.FromResult(true);
+            return true;
         }
     }
 }
