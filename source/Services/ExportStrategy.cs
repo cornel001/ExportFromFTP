@@ -27,6 +27,14 @@ namespace ExportFromFTP
         {
             return new ExportStrategyPartition(serviceProvider, logger, ProcessFile);
         }
+
+        public static IExportStrategy CreateExportStrategyPartitionParallel(
+            IServiceProvider serviceProvider,
+            ILogger<ExportWorker> logger,
+            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile)
+        {
+            return new ExportStrategyPartitionParallel(serviceProvider, logger, ProcessFile);
+        }
     }
 
     public abstract class ExportStrategy : IExportStrategy
@@ -105,7 +113,8 @@ namespace ExportFromFTP
 
         public override async Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
         {
-            await Task.WhenAll(from partition in Partitioner.Create(source).GetPartitions(dop) 
+            await Task.WhenAll(
+                from partition in Partitioner.Create(source).GetPartitions(dop) 
                     select Task.Run(async delegate
                     {
                         using var scope = _serviceProvider.CreateScope();
@@ -114,6 +123,29 @@ namespace ExportFromFTP
                             while (partition.MoveNext())
                                 await _ProcessFile(partition.Current, ftpService).ConfigureAwait(false);
                     }));
+        }
+    }
+
+    public class ExportStrategyPartitionParallel : ExportStrategy
+    {
+        public ExportStrategyPartitionParallel(
+            IServiceProvider serviceProvider,
+            ILogger<ExportWorker> logger,
+            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
+
+        public override async Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
+        {
+            async Task AwaitPartition(IEnumerator<ValueTuple<string, DateTime>> partition)
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
+                using (partition)
+                    while (partition.MoveNext())
+                        await _ProcessFile(partition.Current, ftpService).ConfigureAwait(false);
+            }
+
+            await Task.WhenAll(
+                Partitioner.Create(source).GetPartitions(dop).AsParallel().Select(p => AwaitPartition(p)));
         }
     }
 }

@@ -38,8 +38,9 @@ namespace ExportFromFTP
             var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
             var fileInfoList = ftpService.GetFilesInfo();
 
-            //var strategy = ExportStrategyFactory.CreateExportStrategySemaphore(_serviceProvider, _logger, ProcessFile);
-            var strategy = ExportStrategyFactory.CreateExportStrategyPartition(_serviceProvider, _logger, ProcessFile);
+            var strategy = ExportStrategyFactory.CreateExportStrategySemaphore(_serviceProvider, _logger, ProcessFile);
+            //var strategy = ExportStrategyFactory.CreateExportStrategyPartition(_serviceProvider, _logger, ProcessFile);
+            //var strategy = ExportStrategyFactory.CreateExportStrategyPartitionParallel(_serviceProvider, _logger, ProcessFile);
             await strategy.ExecuteExportAsync(fileInfoList, 3);
 
             _logger.LogInformation("ExecuteAsync stopped at: {time}", DateTime.Now.ToString());
