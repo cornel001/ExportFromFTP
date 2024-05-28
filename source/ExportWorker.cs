@@ -32,40 +32,25 @@ namespace ExportFromFTP
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation(DateTime.Now.ToString());
+            _logger.LogInformation("ExecuteAsync started at: {time}", DateTime.Now.ToString());
 
             using var scope = _serviceProvider.CreateScope();
             var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
-
             var fileInfoList = ftpService.GetFilesInfo();
-            
-            await ProcessFilesAsync(fileInfoList, 3);
-       
-            _logger.LogInformation("parent FTP connection closed.");
 
-            _logger.LogInformation(DateTime.Now.ToString());
+            //var strategy = ExportStrategyFactory.CreateExportStrategySemaphore(_serviceProvider, _logger, ProcessFile);
+            var strategy = ExportStrategyFactory.CreateExportStrategyPartition(_serviceProvider, _logger, ProcessFile);
+            await strategy.ExecuteExportAsync(fileInfoList, 3);
 
-               // await Task.CompletedTask;
-/*             while (!stoppingToken.IsCancellationRequested)
-            {
-                _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
-                await Task.Delay(1000, stoppingToken);
-            } */
+            _logger.LogInformation("ExecuteAsync stopped at: {time}", DateTime.Now.ToString());
+
+            // await Task.CompletedTask;
+            /* while (!stoppingToken.IsCancellationRequested)
+                {
+                    _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
+                    await Task.Delay(1000, stoppingToken);
+                } */
         }
-
-        Task ProcessFilesAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
-            {
-                return Task.WhenAll(from partition in Partitioner.Create(source).GetPartitions(dop) 
-                    select Task.Run(async delegate
-                    {
-                        using var scope = _serviceProvider.CreateScope();
-                        var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
-                        using (partition)
-                            while (partition.MoveNext())
-                                await ProcessFile(partition.Current, ftpService).ConfigureAwait(false);
-                        _logger.LogInformation("child FTP connection closed.");
-                    }));
-            }
 
         async Task ProcessFile((string , DateTime) sourceFileInfo, IFtpService ftpService)
             {
@@ -102,7 +87,7 @@ namespace ExportFromFTP
 
         public override async Task StopAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Service is stopping.");
+            _logger.LogInformation("Main Service is stopping.");
             await Task.CompletedTask;
         }
 

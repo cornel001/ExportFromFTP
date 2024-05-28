@@ -69,7 +69,7 @@ namespace ExportFromFTP
             _logger = logger;
             _session = FTPSession.OpenNewSession(sessionOptionsCfg,logger);
             _localTempPath = CreateTempFolder(logger);
-            _logger.LogDebug("FTP Service constructor ran");
+            _logger.LogInformation("FTP Service initialized");
         }
 
         // If I later switch to async FTP library, I could change
@@ -161,9 +161,8 @@ namespace ExportFromFTP
 
         public void Dispose()
         {
-            _logger.LogInformation("dispose will be called from ftp service's dispose");
             FTPSession.Dispose(_session);
-            _logger.LogInformation("dispose was called from ftp service's dispose");
+            _logger.LogInformation("FTP Service uninitialized");
         }
     } 
 }
