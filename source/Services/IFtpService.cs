@@ -6,7 +6,7 @@ namespace ExportFromFTP
 {
     public interface IFtpService: IDisposable
     {
-        IEnumerable<ValueTuple<string, DateTime>> GetFilesInfo();
+        IEnumerable<(string, DateTime)> GetFilesInfo();
         Task<ICollection<byte>?> GetFileAsync(string path);
         bool DeleteFile(string path);
     }

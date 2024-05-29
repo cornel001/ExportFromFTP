@@ -74,7 +74,7 @@ namespace ExportFromFTP
 
         // If I later switch to async FTP library, I could change
         // IEnumerable<> to IAsyncEnumerable<>
-        public IEnumerable<ValueTuple<string, DateTime>> GetFilesInfo()
+        public IEnumerable<(string, DateTime)> GetFilesInfo()
         {
             // Should be moved later to configuration file.
             const string rootPath = "/";

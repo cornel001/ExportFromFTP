@@ -6,6 +6,6 @@ namespace ExportFromFTP
 {
     public interface IExportStrategy
     {
-        Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop);
+        Task ExecuteExportAsync(IEnumerable<(string, DateTime)> source, int dop);
     }
 }

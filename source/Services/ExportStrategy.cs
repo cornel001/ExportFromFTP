@@ -16,7 +16,7 @@ namespace ExportFromFTP
         public static IExportStrategy CreateExportStrategySemaphore(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile)
+            Func<(string, DateTime), IFtpService, Task> ProcessFile)
         {
             return new ExportStrategySemaphore(serviceProvider, logger, ProcessFile);
         }
@@ -24,7 +24,7 @@ namespace ExportFromFTP
         public static IExportStrategy CreateExportStrategyPartition(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile)
+            Func<(string, DateTime), IFtpService, Task> ProcessFile)
         {
             return new ExportStrategyPartition(serviceProvider, logger, ProcessFile);
         }
@@ -32,7 +32,7 @@ namespace ExportFromFTP
         public static IExportStrategy CreateExportStrategyPartitionParallel(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile)
+            Func<(string, DateTime), IFtpService, Task> ProcessFile)
         {
             return new ExportStrategyPartitionParallel(serviceProvider, logger, ProcessFile);
         }
@@ -40,7 +40,7 @@ namespace ExportFromFTP
         public static IExportStrategy CreateExportStrategyActionBlock(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile)
+            Func<(string, DateTime), IFtpService, Task> ProcessFile)
         {
             return new ExportStrategyActionBlock(serviceProvider, logger, ProcessFile);
         }
@@ -51,19 +51,19 @@ namespace ExportFromFTP
 
         protected readonly ILogger<ExportWorker> _logger;
         protected readonly IServiceProvider _serviceProvider;
-        protected readonly Func<ValueTuple<string, DateTime>, IFtpService, Task> _ProcessFile;
+        protected readonly Func<(string, DateTime), IFtpService, Task> _ProcessFile;
 
         public ExportStrategy(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile)
+            Func<(string, DateTime), IFtpService, Task> ProcessFile)
         {
             _serviceProvider = serviceProvider;
             _logger = logger;
             _ProcessFile = ProcessFile;
         }
 
-        public abstract Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop);
+        public abstract Task ExecuteExportAsync(IEnumerable<(string, DateTime)> source, int dop);
     }
 
     public class ExportStrategySemaphore : ExportStrategy
@@ -71,9 +71,9 @@ namespace ExportFromFTP
         public ExportStrategySemaphore(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
+            Func<(string, DateTime), IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
 
-        public override async Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
+        public override async Task ExecuteExportAsync(IEnumerable<(string, DateTime)> source, int dop)
         {
             var ftpServiceScopeStack = new ConcurrentStack<IServiceScope>();
             var ftpServiceStack = new ConcurrentStack<IFtpService>();
@@ -118,9 +118,9 @@ namespace ExportFromFTP
         public ExportStrategyPartition(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
+            Func<(string, DateTime), IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
 
-        public override async Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
+        public override async Task ExecuteExportAsync(IEnumerable<(string, DateTime)> source, int dop)
         {
             await Task.WhenAll(
                 from partition in Partitioner.Create(source).GetPartitions(dop) 
@@ -140,11 +140,11 @@ namespace ExportFromFTP
         public ExportStrategyPartitionParallel(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
+            Func<(string, DateTime), IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
 
-        public override async Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
+        public override async Task ExecuteExportAsync(IEnumerable<(string, DateTime)> source, int dop)
         {
-            async Task AwaitPartition(IEnumerator<ValueTuple<string, DateTime>> partition)
+            async Task AwaitPartition(IEnumerator<(string, DateTime)> partition)
             {
                 using var scope = _serviceProvider.CreateScope();
                 var ftpService = scope.ServiceProvider.GetRequiredService<IFtpService>();
@@ -163,9 +163,9 @@ namespace ExportFromFTP
         public ExportStrategyActionBlock(
             IServiceProvider serviceProvider,
             ILogger<ExportWorker> logger,
-            Func<ValueTuple<string, DateTime>, IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
+            Func<(string, DateTime), IFtpService, Task> ProcessFile) : base(serviceProvider, logger, ProcessFile) {}
 
-        public override async Task ExecuteExportAsync(IEnumerable<ValueTuple<string, DateTime>> source, int dop)
+        public override async Task ExecuteExportAsync(IEnumerable<(string, DateTime)> source, int dop)
         {
             var ftpServiceScopeStack = new ConcurrentStack<IServiceScope>();
             var ftpServiceStack = new ConcurrentStack<IFtpService>();
