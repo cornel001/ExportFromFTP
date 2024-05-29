@@ -41,6 +41,7 @@ namespace ExportFromFTP
             var strategy = ExportStrategyFactory.CreateExportStrategySemaphore(_serviceProvider, _logger, ProcessFile);
             //var strategy = ExportStrategyFactory.CreateExportStrategyPartition(_serviceProvider, _logger, ProcessFile);
             //var strategy = ExportStrategyFactory.CreateExportStrategyPartitionParallel(_serviceProvider, _logger, ProcessFile);
+            //var strategy = ExportStrategyFactory.CreateExportStrategyActionBlock(_serviceProvider, _logger, ProcessFile);
             await strategy.ExecuteExportAsync(fileInfoList, 3);
 
             _logger.LogInformation("ExecuteAsync stopped at: {time}", DateTime.Now.ToString());
@@ -51,6 +52,7 @@ namespace ExportFromFTP
                     _logger.LogInformation("Worker running at: {time}", DateTimeOffset.Now);
                     await Task.Delay(1000, stoppingToken);
                 } */
+            //await StopAsync(stoppingToken);
         }
 
         async Task ProcessFile((string , DateTime) sourceFileInfo, IFtpService ftpService)
